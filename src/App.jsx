@@ -39,27 +39,29 @@ function normalizePaymentMethods(pm) {
 const REAL_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({ length: 8 }, (_, i) => REAL_YEAR - 3 + i);
 
+/* Cores de muted/accent2/positive/negative calibradas para contraste WCAG AA
+   (>=4.5:1) contra bg, bgAlt e card em cada tema — ver auditoria de acessibilidade. */
 const THEMES = {
   rosa: { label:"Rosa", swatch:"#EFB8C8", checkColor:"#4A3841",
     bg:"#FDF4F7", bgAlt:"#FBE8EE", card:"#FFFFFF", border:"#F3DCE6",
-    text:"#4A3841", muted:"#9C8189", accent:"#EFB8C8", accentSoft:"#FBE4EC",
-    accent2:"#C97B95", positive:"#7FAE8C", negative:"#D98F82", shadow:"rgba(201,123,149,0.14)" },
+    text:"#4A3841", muted:"#80646D", accent:"#EFB8C8", accentSoft:"#FBE4EC",
+    accent2:"#AF486A", positive:"#4A7556", negative:"#B44937", shadow:"rgba(201,123,149,0.14)" },
   lilas: { label:"Lilás", swatch:"#C9B7E4", checkColor:"#3E3650",
     bg:"#F8F5FC", bgAlt:"#EFE7F8", card:"#FFFFFF", border:"#E4DBF0",
-    text:"#3E3650", muted:"#8C82A0", accent:"#C9B7E4", accentSoft:"#EEE7F8",
-    accent2:"#8E76B8", positive:"#7FAE8C", negative:"#D98F82", shadow:"rgba(142,118,184,0.14)" },
+    text:"#3E3650", muted:"#6F6585", accent:"#C9B7E4", accentSoft:"#EEE7F8",
+    accent2:"#785BAA", positive:"#497355", negative:"#B24836", shadow:"rgba(142,118,184,0.14)" },
   creme: { label:"Creme", swatch:"#E3C99A", checkColor:"#4A4030",
     bg:"#FBF7EF", bgAlt:"#F4EBDA", card:"#FFFFFF", border:"#EDE2CC",
-    text:"#4A4030", muted:"#9C8F73", accent:"#E3C99A", accentSoft:"#F4E9D4",
-    accent2:"#B8935A", positive:"#7FAE8C", negative:"#D98F82", shadow:"rgba(184,147,90,0.14)" },
+    text:"#4A4030", muted:"#756A52", accent:"#E3C99A", accentSoft:"#F4E9D4",
+    accent2:"#846639", positive:"#4A7456", negative:"#B34937", shadow:"rgba(184,147,90,0.14)" },
   preto: { label:"Preto", swatch:"#1F1E1E", checkColor:"#FFFFFF",
     bg:"#F7F7F6", bgAlt:"#EDEDEB", card:"#FFFFFF", border:"#E2E1DE",
-    text:"#232323", muted:"#7A7873", accent:"#3A3936", accentSoft:"#E9E8E6",
-    accent2:"#121212", positive:"#3F7A56", negative:"#B4443A", shadow:"rgba(0,0,0,0.12)" },
+    text:"#232323", muted:"#6D6B67", accent:"#3A3936", accentSoft:"#E9E8E6",
+    accent2:"#121212", positive:"#3E7754", negative:"#B4443A", shadow:"rgba(0,0,0,0.12)" },
   marinho: { label:"Marinho", swatch:"#22335C", checkColor:"#FFFFFF",
     bg:"#F5F7FA", bgAlt:"#E9EDF3", card:"#FFFFFF", border:"#DCE3EC",
-    text:"#1B2436", muted:"#6B7688", accent:"#2E4272", accentSoft:"#E4E8F2",
-    accent2:"#16223D", positive:"#3F7A56", negative:"#B4443A", shadow:"rgba(34,51,92,0.14)" },
+    text:"#1B2436", muted:"#626C7D", accent:"#2E4272", accentSoft:"#E4E8F2",
+    accent2:"#16223D", positive:"#3E7754", negative:"#B4443A", shadow:"rgba(34,51,92,0.14)" },
 };
 
 const FONTS_LINK = "@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap');";
@@ -67,6 +69,16 @@ const FONTS_LINK = "@import url('https://fonts.googleapis.com/css2?family=Manrop
 const emptyMonth = () => ({
   entradas: [], fixas: [], variaveis: [], parceladas: [], investimentos: [], dividas: [],
 });
+
+/* Fecha um popover/menu suspenso ao pressionar Esc, para navegação por teclado. */
+function useEscapeToClose(isOpen, onClose) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [isOpen, onClose]);
+}
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 const brl = (n) => (Number(n) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -541,16 +553,16 @@ function SectionTable({ title, icon: Icon, theme, columns, rows, onAdd, onUpdate
     : rows;
   return (
     <div style={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 18, padding: 18, boxShadow: `0 4px 14px ${theme.shadow}` }}>
-      <button onClick={() => setExpanded((v) => !v)} style={{
-        width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0,
+      <button onClick={() => setExpanded((v) => !v)} aria-expanded={expanded} aria-label={`${title}, total ${brl(total)}. ${expanded ? "Recolher" : "Expandir"} seção`} style={{
+        width: "100%", minHeight: 44, background: "none", border: "none", cursor: "pointer", padding: 0,
         display: "flex", justifyContent: "space-between", alignItems: "center",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "'Manrope',sans-serif", fontWeight: 600, fontSize: 17, color: theme.text }}>
-          <Icon size={17} color={theme.accent} /> {title}
+          <Icon size={17} color={theme.accent} aria-hidden="true" /> {title}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontFamily: "'Manrope',sans-serif", fontWeight: 700, fontSize: 15, color: theme.text }}>{brl(total)}</span>
-          {expanded ? <ChevronUp size={18} color={theme.muted} /> : <ChevronDown size={18} color={theme.muted} />}
+          {expanded ? <ChevronUp size={18} color={theme.muted} aria-hidden="true" /> : <ChevronDown size={18} color={theme.muted} aria-hidden="true" />}
         </div>
       </button>
 
@@ -558,10 +570,10 @@ function SectionTable({ title, icon: Icon, theme, columns, rows, onAdd, onUpdate
         <div style={{ marginTop: 14 }}>
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
             <button onClick={onAdd} style={{
-              display: "flex", alignItems: "center", gap: 4, background: theme.accent2, color: "#fff",
+              display: "flex", alignItems: "center", gap: 4, minHeight: 44, background: theme.accent2, color: "#fff",
               border: "none", borderRadius: 999, padding: "6px 12px", fontSize: 13, fontFamily: "'Inter',sans-serif", fontWeight: 600, cursor: "pointer",
             }}>
-              <Plus size={14} /> Adicionar
+              <Plus size={14} aria-hidden="true" /> Adicionar
             </button>
           </div>
 
@@ -570,9 +582,10 @@ function SectionTable({ title, icon: Icon, theme, columns, rows, onAdd, onUpdate
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar..."
+              aria-label={`Buscar em ${title}`}
               style={{
-                width: "100%", border: `1px solid ${theme.border}`, borderRadius: 10, padding: "7px 10px",
-                fontSize: 13, fontFamily: "'Inter',sans-serif", background: theme.bgAlt, color: theme.text, outline: "none", marginBottom: 10,
+                width: "100%", minHeight: 44, border: `1px solid ${theme.border}`, borderRadius: 10, padding: "7px 10px",
+                fontSize: 13, fontFamily: "'Inter',sans-serif", background: theme.bgAlt, color: theme.text, boxSizing: "border-box", marginBottom: 10,
               }}
             />
           )}
@@ -587,20 +600,31 @@ function SectionTable({ title, icon: Icon, theme, columns, rows, onAdd, onUpdate
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {filteredRows.map((row) => (
-                <div key={row.id} style={{
-                  display: "grid", gridTemplateColumns: `repeat(${columns.length}, minmax(90px,1fr)) 28px`,
-                  gap: 6, alignItems: "center", background: theme.bgAlt, borderRadius: 12, padding: "8px 8px",
-                }}>
-                  {columns.map((col) => (
-                    <Field key={col.key} col={col} value={row[col.key]} theme={theme}
-                      onChange={(v) => onUpdate(row.id, col.key, v)} />
-                  ))}
-                  <button onClick={() => onDelete(row.id)} style={{ background: "none", border: "none", cursor: "pointer", color: theme.negative, display:"flex", justifyContent:"center" }}>
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              ))}
+              {filteredRows.map((row) => {
+                const rowLabel = row.despesa || row.nome || row.fonte || "item";
+                return (
+                  <div key={row.id} style={{
+                    display: "flex", flexDirection: "column", gap: 6,
+                    background: theme.bgAlt, borderRadius: 12, padding: "8px 8px",
+                  }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(90px,1fr))", gap: 6, alignItems: "center" }}>
+                      {columns.map((col) => (
+                        <Field key={col.key} col={col} value={row[col.key]} theme={theme}
+                          onChange={(v) => onUpdate(row.id, col.key, v)} />
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => onDelete(row.id)}
+                      aria-label={`Remover ${rowLabel}`}
+                      style={{
+                        alignSelf: "flex-end", minWidth: 44, minHeight: 44, background: "none", border: "none",
+                        cursor: "pointer", color: theme.negative, display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                      <Trash2 size={15} aria-hidden="true" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -616,7 +640,7 @@ function Field({ col, value, onChange, theme }) {
   };
   if (col.type === "select") {
     return (
-      <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} style={baseStyle}>
+      <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} aria-label={col.label} style={baseStyle}>
         <option value="">—</option>
         {col.options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
@@ -625,8 +649,9 @@ function Field({ col, value, onChange, theme }) {
   if (col.type === "pago") {
     const isSim = value === "SIM";
     return (
-      <button onClick={() => onChange(isSim ? "NÃO" : "SIM")} title="Marcar como pago/não pago" style={{
-        ...baseStyle, cursor: "pointer", fontWeight: 700, textAlign: "center", fontSize: 11,
+      <button onClick={() => onChange(isSim ? "NÃO" : "SIM")} title="Marcar como pago/não pago"
+        aria-pressed={isSim} aria-label={isSim ? "Pago. Tocar para marcar como não pago" : "Não pago. Tocar para marcar como pago"} style={{
+        ...baseStyle, cursor: "pointer", fontWeight: 700, textAlign: "center", fontSize: 11, minHeight: 32,
         background: isSim ? "rgba(63,143,99,0.15)" : "rgba(193,85,74,0.15)",
         color: isSim ? theme.positive : theme.negative, border: "none",
       }}>
@@ -637,8 +662,9 @@ function Field({ col, value, onChange, theme }) {
   if (col.type === "recorrente") {
     const isSim = value === "SIM";
     return (
-      <button onClick={() => onChange(isSim ? "NÃO" : "SIM")} title="Repetir todo mês" style={{
-        ...baseStyle, cursor: "pointer", fontWeight: 700, textAlign: "center", fontSize: 11,
+      <button onClick={() => onChange(isSim ? "NÃO" : "SIM")} title="Repetir todo mês"
+        aria-pressed={isSim} aria-label={isSim ? "Repete todo mês. Tocar para tornar único" : "Único. Tocar para repetir todo mês"} style={{
+        ...baseStyle, cursor: "pointer", fontWeight: 700, textAlign: "center", fontSize: 11, minHeight: 32,
         background: isSim ? theme.accentSoft : "transparent",
         color: isSim ? theme.accent2 : theme.muted, border: `1px solid ${theme.border}`,
       }}>
@@ -651,6 +677,7 @@ function Field({ col, value, onChange, theme }) {
       type={col.type === "number" ? "number" : col.type === "date" ? "date" : "text"}
       value={value ?? ""}
       placeholder={col.label}
+      aria-label={col.label}
       onChange={(e) => onChange(e.target.value)}
       style={baseStyle}
     />
@@ -686,6 +713,7 @@ function ReportView({ periodLabel, monthName, year, month, theme, onClose, categ
   const payEntries = Object.entries(s.byPayment).sort((a, b) => b[1] - a[1]);
   const maxCat = Math.max(1, ...catEntries.map((e) => e[1]));
   const [showExportMenu, setShowExportMenu] = useState(false);
+  useEscapeToClose(showExportMenu, () => setShowExportMenu(false));
 
   const exportOptions = [
     {
@@ -717,27 +745,27 @@ function ReportView({ periodLabel, monthName, year, month, theme, onClose, categ
         <div style={{ fontFamily: "'Manrope',sans-serif", fontWeight: 700, fontSize: 20, color: theme.text }}>Relatório · {periodLabel}</div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <div style={{ position: "relative" }}>
-            <button onClick={() => setShowExportMenu((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 6, background: theme.accent2, color: "#fff", border: "none", borderRadius: 999, padding: "8px 14px", fontFamily: "'Inter',sans-serif", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-              <FileDown size={14} /> Relatório {showExportMenu ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            <button onClick={() => setShowExportMenu((v) => !v)} aria-haspopup="true" aria-expanded={showExportMenu} style={{ display: "flex", alignItems: "center", gap: 6, minHeight: 44, background: theme.accent2, color: "#fff", border: "none", borderRadius: 999, padding: "8px 14px", fontFamily: "'Inter',sans-serif", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+              <FileDown size={14} aria-hidden="true" /> Relatório {showExportMenu ? <ChevronUp size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
             </button>
             {showExportMenu && (
-              <div style={{ position: "absolute", right: 0, top: 42, background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 6, boxShadow: `0 8px 24px ${theme.shadow}`, zIndex: 10, width: 210 }}>
+              <div role="menu" aria-label="Opções de exportação" style={{ position: "absolute", right: 0, top: 42, background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 6, boxShadow: `0 8px 24px ${theme.shadow}`, zIndex: 10, width: 210, maxWidth: "calc(100vw - 36px)" }}>
                 {exportOptions.map((opt) => (
-                  <button key={opt.key} onClick={() => runExport(opt)} style={{
-                    width: "100%", display: "flex", alignItems: "center", gap: 8, textAlign: "left",
+                  <button key={opt.key} role="menuitem" onClick={() => runExport(opt)} style={{
+                    width: "100%", minHeight: 44, display: "flex", alignItems: "center", gap: 8, textAlign: "left",
                     background: "none", border: "none", borderRadius: 8, padding: "9px 10px", cursor: "pointer",
                     fontFamily: "'Inter',sans-serif", fontWeight: 600, fontSize: 13, color: theme.text,
                   }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = theme.bgAlt)}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "none")}>
-                    <opt.icon size={14} color={theme.accent2} /> {opt.label}
+                    <opt.icon size={14} color={theme.accent2} aria-hidden="true" /> {opt.label}
                   </button>
                 ))}
               </div>
             )}
           </div>
-          <button onClick={onClose} style={{ background: theme.bgAlt, color: theme.text, border: `1px solid ${theme.border}`, borderRadius: 999, padding: "8px 14px", fontFamily: "'Inter',sans-serif", fontWeight: 600, fontSize: 13, cursor: "pointer", display:"flex", alignItems:"center", gap:6 }}>
-            <X size={14} /> Fechar
+          <button onClick={onClose} style={{ background: theme.bgAlt, color: theme.text, border: `1px solid ${theme.border}`, borderRadius: 999, padding: "8px 14px", minHeight: 44, fontFamily: "'Inter',sans-serif", fontWeight: 600, fontSize: 13, cursor: "pointer", display:"flex", alignItems:"center", gap:6 }}>
+            <X size={14} aria-hidden="true" /> Fechar
           </button>
         </div>
       </div>
@@ -886,7 +914,7 @@ function DashboardView({ yearData, theme, year }) {
         <StatCard icon={AlertTriangle} label="Dívidas atuais" value={dividaFim} theme={theme} tone="negative" />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(420px,1fr))", gap: 14, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(280px,100%),1fr))", gap: 14, alignItems: "start" }}>
       <ChartCard title="Saldo mês a mês" theme={theme}>
         <ResponsiveContainer>
           <LineChart data={monthly} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
@@ -1069,10 +1097,10 @@ function CardsView({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 8 }}>
         <Eyebrow theme={theme}>Cartões · {MONTHS[monthIndex]} de {year}</Eyebrow>
         <button onClick={onAddCard} style={{
-          display: "flex", alignItems: "center", gap: 6, background: theme.accent2, color: "#fff",
+          display: "flex", alignItems: "center", gap: 6, minHeight: 44, background: theme.accent2, color: "#fff",
           border: "none", borderRadius: 999, padding: "8px 14px", fontFamily: "'Inter',sans-serif", fontWeight: 600, fontSize: 13, cursor: "pointer",
         }}>
-          <Plus size={14} /> Adicionar cartão / forma de pagamento
+          <Plus size={14} aria-hidden="true" /> Adicionar cartão / forma de pagamento
         </button>
       </div>
 
@@ -1084,8 +1112,8 @@ function CardsView({
             const isOpen = expanded === card.index;
             return (
               <div key={card.index} style={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 18, padding: 18, boxShadow: `0 4px 14px ${theme.shadow}` }}>
-                <button onClick={() => setExpanded(isOpen ? null : card.index)} style={{
-                  width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0,
+                <button onClick={() => setExpanded(isOpen ? null : card.index)} aria-expanded={isOpen} style={{
+                  width: "100%", minHeight: 44, background: "none", border: "none", cursor: "pointer", padding: 0,
                   display: "flex", justifyContent: "space-between", alignItems: "center",
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -1103,7 +1131,7 @@ function CardsView({
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ fontFamily: "'Manrope',sans-serif", fontWeight: 800, fontSize: 18, color: theme.text }}>{brl(card.total)}</span>
-                    {isOpen ? <ChevronUp size={18} color={theme.muted} /> : <ChevronDown size={18} color={theme.muted} />}
+                    {isOpen ? <ChevronUp size={18} color={theme.muted} aria-hidden="true" /> : <ChevronDown size={18} color={theme.muted} aria-hidden="true" />}
                   </div>
                 </button>
 
@@ -1149,27 +1177,27 @@ function CardsView({
 
                     <div style={{ borderTop: `1px dashed ${theme.border}`, paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
                       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                        <input value={card.name} onChange={(e) => onRenameCard(card.index, e.target.value)} style={{ ...inputStyle, flex: 1 }} />
-                        <button onClick={() => onToggleIsCard(card.index)} style={{
-                          border: `1px solid ${theme.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer",
+                        <input value={card.name} onChange={(e) => onRenameCard(card.index, e.target.value)} aria-label={`Nome da forma de pagamento ${card.name}`} style={{ ...inputStyle, flex: 1, minHeight: 44, boxSizing: "border-box" }} />
+                        <button onClick={() => onToggleIsCard(card.index)} aria-pressed={card.isCard} style={{
+                          border: `1px solid ${theme.border}`, borderRadius: 8, padding: "6px 10px", minHeight: 44, fontSize: 11, fontWeight: 700, cursor: "pointer",
                           background: card.isCard ? theme.accentSoft : "transparent", color: card.isCard ? theme.accent2 : theme.muted,
                         }}>
                           {card.isCard ? "💳 Cartão" : "Pagto à vista"}
                         </button>
-                        <button onClick={() => requestRemoveCard(card.index)} style={{ background: "none", border: "none", cursor: "pointer", color: theme.negative }}>
-                          <Trash2 size={16} />
+                        <button onClick={() => requestRemoveCard(card.index)} aria-label={`Remover forma de pagamento ${card.name}`} style={{ minWidth: 44, minHeight: 44, background: "none", border: "none", cursor: "pointer", color: theme.negative, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <Trash2 size={16} aria-hidden="true" />
                         </button>
                       </div>
 
                       {card.isCard && (
                         <div style={{ display: "flex", gap: 8 }}>
                           <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 5 }}>
-                            <span style={{ fontSize: 11, color: theme.muted, whiteSpace: "nowrap" }}>Fecha dia</span>
-                            <input type="number" min="1" max="31" value={card.closingDay} onChange={(e) => onSetCardDates(card.index, "closingDay", e.target.value)} placeholder="—" style={{ ...inputStyle, width: "100%" }} />
+                            <label htmlFor={`closing-${card.index}`} style={{ fontSize: 11, color: theme.muted, whiteSpace: "nowrap" }}>Fecha dia</label>
+                            <input id={`closing-${card.index}`} type="number" min="1" max="31" value={card.closingDay} onChange={(e) => onSetCardDates(card.index, "closingDay", e.target.value)} placeholder="—" style={{ ...inputStyle, width: "100%", minHeight: 44, boxSizing: "border-box" }} />
                           </div>
                           <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 5 }}>
-                            <span style={{ fontSize: 11, color: theme.muted, whiteSpace: "nowrap" }}>Vence dia</span>
-                            <input type="number" min="1" max="31" value={card.dueDay} onChange={(e) => onSetCardDates(card.index, "dueDay", e.target.value)} placeholder="—" style={{ ...inputStyle, width: "100%" }} />
+                            <label htmlFor={`due-${card.index}`} style={{ fontSize: 11, color: theme.muted, whiteSpace: "nowrap" }}>Vence dia</label>
+                            <input id={`due-${card.index}`} type="number" min="1" max="31" value={card.dueDay} onChange={(e) => onSetCardDates(card.index, "dueDay", e.target.value)} placeholder="—" style={{ ...inputStyle, width: "100%", minHeight: 44, boxSizing: "border-box" }} />
                           </div>
                         </div>
                       )}
@@ -1181,11 +1209,11 @@ function CardsView({
                           </div>
                           <div style={{ display: "flex", gap: 6 }}>
                             <button onClick={onCancelDeleteCard} style={{
-                              flex: 1, background: theme.card, color: theme.text, border: `1px solid ${theme.border}`, borderRadius: 8,
+                              flex: 1, minHeight: 44, background: theme.card, color: theme.text, border: `1px solid ${theme.border}`, borderRadius: 8,
                               padding: "6px 0", fontSize: 12, fontWeight: 600, cursor: "pointer",
                             }}>Cancelar</button>
                             <button onClick={() => onConfirmDeleteCard(card.index)} style={{
-                              flex: 1, background: theme.negative, color: "#fff", border: "none", borderRadius: 8,
+                              flex: 1, minHeight: 44, background: theme.negative, color: "#fff", border: "none", borderRadius: 8,
                               padding: "6px 0", fontSize: 12, fontWeight: 700, cursor: "pointer",
                             }}>Excluir mesmo assim</button>
                           </div>
@@ -1252,8 +1280,13 @@ function CalendarView({ yearData, monthIndex, year, theme, paymentMethods }) {
 
       <div style={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 18, padding: 18, boxShadow: `0 4px 14px ${theme.shadow}` }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4, marginBottom: 8 }}>
-          {["D", "S", "T", "Q", "Q", "S", "S"].map((d, i) => (
-            <div key={i} style={{ textAlign: "center", fontSize: 11, color: theme.muted, fontWeight: 700, fontFamily: "'Inter',sans-serif" }}>{d}</div>
+          {[
+            ["D", "Domingo"], ["S", "Segunda-feira"], ["T", "Terça-feira"], ["Q", "Quarta-feira"],
+            ["Q", "Quinta-feira"], ["S", "Sexta-feira"], ["S", "Sábado"],
+          ].map(([d, full], i) => (
+            <div key={i} role="columnheader" aria-label={full} style={{ textAlign: "center", fontSize: 11, color: theme.muted, fontWeight: 700, fontFamily: "'Inter',sans-serif" }}>
+              <span aria-hidden="true">{d}</span>
+            </div>
           ))}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 4 }}>
@@ -1263,15 +1296,20 @@ function CalendarView({ yearData, monthIndex, year, theme, paymentMethods }) {
             const has = items.length > 0;
             const cardsHoje = byDayCards[day] || [];
             const hasCard = cardsHoje.length > 0;
+            const itemsTotal = items.reduce((s, r) => s + num(r.valor), 0);
+            const dayLabel = `Dia ${day}${isToday(day) ? " (hoje)" : ""}`
+              + (has ? `, ${items.length} conta${items.length !== 1 ? "s" : ""} pendente${items.length !== 1 ? "s" : ""} de ${brl(itemsTotal)}` : "")
+              + (hasCard ? `, vencimento de ${cardsHoje.join(", ")}` : "");
             return (
-              <button key={i} onClick={() => setSelectedDay(has ? day : null)} title={hasCard ? `Vence: ${cardsHoje.join(", ")}` : undefined} style={{
-                aspectRatio: "1", borderRadius: 10, cursor: has ? "pointer" : "default",
+              <button key={i} onClick={() => setSelectedDay(has ? day : null)} title={hasCard ? `Vence: ${cardsHoje.join(", ")}` : undefined}
+                aria-label={dayLabel} aria-pressed={selectedDay === day} style={{
+                aspectRatio: "1", minHeight: 44, borderRadius: 10, cursor: has ? "pointer" : "default",
                 border: isToday(day) ? `2px solid ${theme.accent2}` : `1px solid ${theme.border}`,
                 background: selectedDay === day ? theme.accentSoft : (has || hasCard) ? theme.bgAlt : theme.card,
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, padding: 2,
               }}>
-                <span style={{ fontSize: 12, fontWeight: isToday(day) ? 800 : 500, color: theme.text, fontFamily: "'Inter',sans-serif" }}>{day}</span>
-                <span style={{ display: "flex", gap: 2 }}>
+                <span aria-hidden="true" style={{ fontSize: 12, fontWeight: isToday(day) ? 800 : 500, color: theme.text, fontFamily: "'Inter',sans-serif" }}>{day}</span>
+                <span aria-hidden="true" style={{ display: "flex", gap: 2 }}>
                   {has && <span style={{ width: 5, height: 5, borderRadius: "50%", background: theme.negative }} />}
                   {hasCard && <span style={{ width: 5, height: 5, borderRadius: "50%", background: theme.accent2 }} />}
                 </span>
@@ -1334,6 +1372,7 @@ function CalendarView({ yearData, monthIndex, year, theme, paymentMethods }) {
 
 function AnnualTableView({ yearData, categories, theme, year }) {
   const [showExportMenu, setShowExportMenu] = useState(false);
+  useEscapeToClose(showExportMenu, () => setShowExportMenu(false));
   const { matrix, totalGastosRow, totalEntradasRow, totalSaldoRow } = computeAnnualMatrix(yearData, categories);
 
   const exportOptions = [
@@ -1355,20 +1394,20 @@ function AnnualTableView({ yearData, categories, theme, year }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 8 }}>
         <Eyebrow theme={theme}>Visão anual · {year}</Eyebrow>
         <div style={{ position: "relative" }}>
-          <button onClick={() => setShowExportMenu((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 6, background: theme.accent2, color: "#fff", border: "none", borderRadius: 999, padding: "8px 14px", fontFamily: "'Inter',sans-serif", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
-            <FileDown size={14} /> Relatório {showExportMenu ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          <button onClick={() => setShowExportMenu((v) => !v)} aria-haspopup="true" aria-expanded={showExportMenu} style={{ display: "flex", alignItems: "center", gap: 6, minHeight: 44, background: theme.accent2, color: "#fff", border: "none", borderRadius: 999, padding: "8px 14px", fontFamily: "'Inter',sans-serif", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+            <FileDown size={14} aria-hidden="true" /> Relatório {showExportMenu ? <ChevronUp size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
           </button>
           {showExportMenu && (
-            <div style={{ position: "absolute", right: 0, top: 42, background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 6, boxShadow: `0 8px 24px ${theme.shadow}`, zIndex: 10, width: 210 }}>
+            <div role="menu" aria-label="Opções de exportação" style={{ position: "absolute", right: 0, top: 42, background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 6, boxShadow: `0 8px 24px ${theme.shadow}`, zIndex: 10, width: 210, maxWidth: "calc(100vw - 36px)" }}>
               {exportOptions.map((opt) => (
-                <button key={opt.key} onClick={() => runExport(opt)} style={{
-                  width: "100%", display: "flex", alignItems: "center", gap: 8, textAlign: "left",
+                <button key={opt.key} role="menuitem" onClick={() => runExport(opt)} style={{
+                  width: "100%", minHeight: 44, display: "flex", alignItems: "center", gap: 8, textAlign: "left",
                   background: "none", border: "none", borderRadius: 8, padding: "9px 10px", cursor: "pointer",
                   fontFamily: "'Inter',sans-serif", fontWeight: 600, fontSize: 13, color: theme.text,
                 }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = theme.bgAlt)}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "none")}>
-                  <opt.icon size={14} color={theme.accent2} /> {opt.label}
+                  <opt.icon size={14} color={theme.accent2} aria-hidden="true" /> {opt.label}
                 </button>
               ))}
             </div>
@@ -1438,6 +1477,9 @@ export default function App() {
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [confirmDeleteCategory, setConfirmDeleteCategory] = useState(null);
   const [confirmDeletePayment, setConfirmDeletePayment] = useState(null);
+
+  useEscapeToClose(showCategoryManager, () => { setShowCategoryManager(false); setConfirmDeleteCategory(null); });
+  useEscapeToClose(showThemePicker, () => setShowThemePicker(false));
 
   const theme = THEMES[themeKey];
 
@@ -1724,7 +1766,12 @@ export default function App() {
       <style>{`
         ${FONTS_LINK}
         * { box-sizing: border-box; }
-        input:focus, select:focus { border-color: ${theme.accent} !important; }
+        input:focus, select:focus { border-color: ${theme.accent2} !important; }
+        input:focus-visible, select:focus-visible, textarea:focus-visible,
+        button:focus-visible, [tabindex]:focus-visible {
+          outline: 2px solid ${theme.accent2} !important;
+          outline-offset: 2px !important;
+        }
         ::-webkit-scrollbar { height: 6px; width: 6px; }
         ::-webkit-scrollbar-thumb { background: ${theme.border}; border-radius: 4px; }
       `}</style>
@@ -1739,25 +1786,26 @@ export default function App() {
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
             <div style={{ position: "relative" }}>
-              <button onClick={() => { setShowCategoryManager((v) => !v); setShowThemePicker(false); }} style={{
-                width: 40, height: 40, borderRadius: "50%", border: `2px solid ${theme.border}`,
+              <button onClick={() => { setShowCategoryManager((v) => !v); setShowThemePicker(false); }}
+                aria-label="Gerenciar categorias" aria-haspopup="true" aria-expanded={showCategoryManager} style={{
+                width: 44, height: 44, borderRadius: "50%", border: `2px solid ${theme.border}`,
                 background: theme.card, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <Tag size={18} color={theme.accent2} />
+                <Tag size={18} color={theme.accent2} aria-hidden="true" />
               </button>
               {showCategoryManager && (
-                <div style={{ position: "absolute", right: 0, top: 46, background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 14, boxShadow: `0 8px 24px ${theme.shadow}`, zIndex: 10, width: 240 }}>
+                <div role="dialog" aria-label="Gerenciar categorias" style={{ position: "absolute", right: 0, top: 46, background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 14, boxShadow: `0 8px 24px ${theme.shadow}`, zIndex: 10, width: 240, maxWidth: "calc(100vw - 36px)" }}>
                   <div style={{ fontFamily: "'Manrope',sans-serif", fontWeight: 700, fontSize: 13, color: theme.text, marginBottom: 8 }}>Categorias</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 300, overflowY: "auto" }}>
                     {categories.map((c, i) => (
                       <div key={i} style={{ display: "flex", flexDirection: "column", gap: 3, paddingBottom: 6, borderBottom: `1px dashed ${theme.border}` }}>
                         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                          <input value={c} onChange={(e) => renameCategory(i, e.target.value)} style={{
+                          <input value={c} onChange={(e) => renameCategory(i, e.target.value)} aria-label={`Nome da categoria ${c}`} style={{
                             flex: 1, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "6px 8px",
-                            fontSize: 12, fontFamily: "'Inter',sans-serif", background: theme.bgAlt, color: theme.text, outline: "none",
+                            fontSize: 12, fontFamily: "'Inter',sans-serif", background: theme.bgAlt, color: theme.text,
                           }} />
-                          <button onClick={() => requestRemoveCategory(i)} style={{ background: "none", border: "none", cursor: "pointer", color: theme.negative }}>
-                            <Trash2 size={14} />
+                          <button onClick={() => requestRemoveCategory(i)} aria-label={`Remover categoria ${c}`} style={{ minWidth: 44, minHeight: 44, background: "none", border: "none", cursor: "pointer", color: theme.negative, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <Trash2 size={14} aria-hidden="true" />
                           </button>
                         </div>
                         <input
@@ -1765,9 +1813,10 @@ export default function App() {
                           value={categoryBudgets[c] ?? ""}
                           onChange={(e) => setCategoryBudget(c, e.target.value)}
                           placeholder="Meta mensal (opcional)"
+                          aria-label={`Meta mensal para ${c}`}
                           style={{
                             border: `1px solid ${theme.border}`, borderRadius: 8, padding: "5px 8px",
-                            fontSize: 11, fontFamily: "'Inter',sans-serif", background: "transparent", color: theme.muted, outline: "none",
+                            fontSize: 11, fontFamily: "'Inter',sans-serif", background: "transparent", color: theme.muted,
                           }}
                         />
                         {confirmDeleteCategory === i && (
@@ -1777,11 +1826,11 @@ export default function App() {
                             </div>
                             <div style={{ display: "flex", gap: 6 }}>
                               <button onClick={() => setConfirmDeleteCategory(null)} style={{
-                                flex: 1, background: theme.bgAlt, color: theme.text, border: `1px solid ${theme.border}`, borderRadius: 8,
+                                flex: 1, minHeight: 44, background: theme.bgAlt, color: theme.text, border: `1px solid ${theme.border}`, borderRadius: 8,
                                 padding: "5px 0", fontSize: 11, fontWeight: 600, cursor: "pointer",
                               }}>Cancelar</button>
                               <button onClick={() => { removeCategory(i); setConfirmDeleteCategory(null); }} style={{
-                                flex: 1, background: theme.negative, color: "#fff", border: "none", borderRadius: 8,
+                                flex: 1, minHeight: 44, background: theme.negative, color: "#fff", border: "none", borderRadius: 8,
                                 padding: "5px 0", fontSize: 11, fontWeight: 700, cursor: "pointer",
                               }}>Excluir mesmo assim</button>
                             </div>
@@ -1791,37 +1840,40 @@ export default function App() {
                     ))}
                   </div>
                   <button onClick={addCategory} style={{
-                    marginTop: 10, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                    marginTop: 10, width: "100%", minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
                     background: theme.bgAlt, color: theme.text, border: `1px solid ${theme.border}`, borderRadius: 999, padding: "7px 0",
                     fontSize: 12, fontFamily: "'Inter',sans-serif", fontWeight: 600, cursor: "pointer",
                   }}>
-                    <Plus size={13} /> Nova categoria
+                    <Plus size={13} aria-hidden="true" /> Nova categoria
                   </button>
                   <button onClick={() => { setShowCategoryManager(false); setConfirmDeleteCategory(null); }} style={{
-                    marginTop: 6, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                    marginTop: 6, width: "100%", minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
                     background: theme.accent2, color: "#fff", border: "none", borderRadius: 999, padding: "8px 0",
                     fontSize: 12, fontFamily: "'Inter',sans-serif", fontWeight: 700, cursor: "pointer",
                   }}>
-                    <Check size={13} /> Salvar
+                    <Check size={13} aria-hidden="true" /> Salvar
                   </button>
                 </div>
               )}
             </div>
             <div style={{ position: "relative" }}>
-              <button onClick={() => { setShowThemePicker((v) => !v); setShowCategoryManager(false); }} style={{
-                width: 40, height: 40, borderRadius: "50%", border: `2px solid ${theme.border}`,
+              <button onClick={() => { setShowThemePicker((v) => !v); setShowCategoryManager(false); }}
+                aria-label="Escolher tema de cores" aria-haspopup="true" aria-expanded={showThemePicker} style={{
+                width: 44, height: 44, borderRadius: "50%", border: `2px solid ${theme.border}`,
                 background: theme.card, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <Palette size={18} color={theme.accent2} />
+                <Palette size={18} color={theme.accent2} aria-hidden="true" />
               </button>
               {showThemePicker && (
-                <div style={{ position: "absolute", right: 0, top: 46, background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 10, boxShadow: `0 8px 24px ${theme.shadow}`, zIndex: 10, display: "flex", gap: 8 }}>
+                <div role="dialog" aria-label="Escolher tema de cores" style={{ position: "absolute", right: 0, top: 46, background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 10, boxShadow: `0 8px 24px ${theme.shadow}`, zIndex: 10, display: "flex", gap: 8, maxWidth: "calc(100vw - 36px)", flexWrap: "wrap" }}>
                   {Object.entries(THEMES).map(([key, t]) => (
-                    <button key={key} onClick={() => { setThemeKey(key); setShowThemePicker(false); }} style={{
-                      width: 36, height: 36, borderRadius: "50%", border: themeKey === key ? `2px solid ${t.accent2}` : `1px solid ${theme.border}`,
+                    <button key={key} onClick={() => { setThemeKey(key); setShowThemePicker(false); }}
+                      aria-label={`Tema ${t.label}${themeKey === key ? " (selecionado)" : ""}`}
+                      aria-pressed={themeKey === key} style={{
+                      width: 44, height: 44, borderRadius: "50%", border: themeKey === key ? `2px solid ${t.accent2}` : `1px solid ${theme.border}`,
                       background: t.swatch, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
                     }} title={t.label}>
-                      {themeKey === key && <Check size={14} color={t.checkColor} />}
+                      {themeKey === key && <Check size={14} color={t.checkColor} aria-hidden="true" />}
                     </button>
                   ))}
                 </div>
@@ -1832,11 +1884,11 @@ export default function App() {
 
         <div style={{ display: "flex", gap: 8, marginTop: 18, flexWrap: "wrap" }}>
           {[["calendario", "Calendário"], ["dashboard", "Dashboard"], ["cartoes", "Cartões"], ["mensal", "Mensal"], ["anual", "Visão Anual"], ["relatorio", "Relatório"]].map(([key, label]) => (
-            <button key={key} onClick={() => setView(key)} style={{
-              flex: "1 1 auto", minWidth: 90, padding: "9px 6px", borderRadius: 999, border: "none", cursor: "pointer",
+            <button key={key} onClick={() => setView(key)} aria-current={view === key ? "page" : undefined} style={{
+              flex: "1 1 auto", minWidth: 90, minHeight: 44, padding: "9px 6px", borderRadius: 999, border: "none", cursor: "pointer",
               fontFamily: "'Inter',sans-serif", fontWeight: 600, fontSize: 13,
-              background: view === key ? theme.accent : theme.bgAlt,
-              color: view === key ? theme.bg : theme.text,
+              background: view === key ? theme.accent2 : theme.bgAlt,
+              color: view === key ? "#fff" : theme.text,
             }}>{label}</button>
           ))}
         </div>
@@ -1862,18 +1914,18 @@ export default function App() {
 
         {(view === "mensal" || view === "calendario" || view === "cartoes") && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
-            <select value={monthIndex} onChange={(e) => setMonthIndex(Number(e.target.value))} style={{ ...selectStyle, flex: 1.6 }}>
+            <select value={monthIndex} onChange={(e) => setMonthIndex(Number(e.target.value))} aria-label="Mês" style={{ ...selectStyle, flex: 1.6, minHeight: 44 }}>
               {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
             </select>
-            <select value={year} onChange={(e) => setYear(Number(e.target.value))} style={{ ...selectStyle, flex: 1 }}>
+            <select value={year} onChange={(e) => setYear(Number(e.target.value))} aria-label="Ano" style={{ ...selectStyle, flex: 1, minHeight: 44 }}>
               {YEAR_OPTIONS.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
         )}
         {(view === "dashboard" || view === "anual") && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14 }}>
-            <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 13, color: theme.muted }}>Ano:</span>
-            <select value={year} onChange={(e) => setYear(Number(e.target.value))} style={{ ...selectStyle, flex: "none", width: 110 }}>
+            <span id="ano-label" style={{ fontFamily: "'Inter',sans-serif", fontSize: 13, color: theme.muted }}>Ano:</span>
+            <select value={year} onChange={(e) => setYear(Number(e.target.value))} aria-labelledby="ano-label" style={{ ...selectStyle, flex: "none", width: 110, minHeight: 44 }}>
               {YEAR_OPTIONS.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
@@ -1884,7 +1936,7 @@ export default function App() {
         {view === "mensal" && (
           <>
             <div style={{
-              background: `linear-gradient(135deg, ${theme.accent2}, ${theme.accent})`, borderRadius: 20, padding: "20px 22px",
+              background: theme.accent2, borderRadius: 20, padding: "20px 22px",
               color: "#fff", boxShadow: `0 10px 26px ${theme.shadow}`,
             }}>
               <div style={{ fontFamily: "'Manrope',sans-serif", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", fontSize: 12, opacity: 0.9 }}>Saldo de {periodLabel}</div>
