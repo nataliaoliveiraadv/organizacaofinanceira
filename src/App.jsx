@@ -135,7 +135,24 @@ function syncParceladaChain(yearData, monthIndex, rowId, row) {
   return newYearData;
 }
 
-function syncFixaRecurrence(yearData, monthIndex, rowId, row) {
+function daysInMonth(year, monthIndex) {
+  return new Date(year, monthIndex + 1, 0).getDate();
+}
+
+/* Reaproveita o dia da data original numa outra combinação de mês/ano,
+   ajustando (clamp) para o último dia do mês de destino quando necessário
+   (ex.: dia 31 numa cópia de fevereiro vira dia 28/29). */
+function buildDateForMonth(dateStr, year, monthIndex) {
+  if (!dateStr) return "";
+  const day = parseInt(String(dateStr).slice(8, 10), 10);
+  if (!day) return "";
+  const clampedDay = Math.min(day, daysInMonth(year, monthIndex));
+  const mm = String(monthIndex + 1).padStart(2, "0");
+  const dd = String(clampedDay).padStart(2, "0");
+  return `${year}-${mm}-${dd}`;
+}
+
+function syncFixaRecurrence(yearData, monthIndex, rowId, row, year) {
   const newYearData = { ...yearData };
   if (row.recorrente === "SIM") {
     const linkId = row.linkId || uid();
@@ -146,19 +163,20 @@ function syncFixaRecurrence(yearData, monthIndex, rowId, row) {
         const pos = list.findIndex((r) => r.id === rowId);
         if (pos >= 0) list[pos] = { ...list[pos], ...row, linkId };
       } else {
+        const copyDate = buildDateForMonth(row.data, year, idx);
         const pos = list.findIndex((r) => r.linkId === linkId);
         if (pos >= 0) {
-          list[pos] = { ...list[pos], despesa: row.despesa, valor: row.valor, categoria: row.categoria, pagamento: row.pagamento, recorrente: "SIM", linkId };
+          list[pos] = { ...list[pos], despesa: row.despesa, valor: row.valor, categoria: row.categoria, pagamento: row.pagamento, data: copyDate, recorrente: "SIM", linkId };
         } else {
-          list.push({ id: uid(), linkId, despesa: row.despesa, data: "", valor: row.valor, pagamento: row.pagamento, categoria: row.categoria, pago: "NÃO", recorrente: "SIM" });
+          list.push({ id: uid(), linkId, despesa: row.despesa, data: copyDate, valor: row.valor, pagamento: row.pagamento, categoria: row.categoria, pago: "NÃO", recorrente: "SIM" });
         }
       }
       monthData.fixas = list;
       newYearData[idx] = monthData;
     }
   } else if (row.linkId) {
-    for (let idx = 0; idx < 12; idx++) {
-      if (idx === monthIndex || !newYearData[idx]) continue;
+    for (let idx = monthIndex + 1; idx <= 11; idx++) {
+      if (!newYearData[idx]) continue;
       newYearData[idx] = { ...newYearData[idx], fixas: newYearData[idx].fixas.filter((r) => r.linkId !== row.linkId) };
     }
     const monthData = { ...newYearData[monthIndex] };
@@ -1561,7 +1579,7 @@ export default function App() {
         md.fixas = list;
         yd[monthIndex] = md;
         const updatedRow = list.find((r) => r.id === id);
-        const newYd = updatedRow ? syncFixaRecurrence(yd, monthIndex, id, updatedRow) : yd;
+        const newYd = updatedRow ? syncFixaRecurrence(yd, monthIndex, id, updatedRow, year) : yd;
         return { ...prev, [year]: newYd };
       });
       return;
