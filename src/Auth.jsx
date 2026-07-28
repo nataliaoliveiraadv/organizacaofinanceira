@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "./supabaseClient";
 
 export default function Auth({ onLogin }) {
   const [mode, setMode] = useState("login"); // "login" | "signup"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
@@ -59,12 +61,26 @@ export default function Auth({ onLogin }) {
           style={{ border: "1px solid #F3DCE6", borderRadius: 10, padding: "12px 12px", minHeight: 44, fontSize: 14, boxSizing: "border-box" }}
         />
         <label htmlFor="auth-password" style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>Senha</label>
-        <input
-          id="auth-password" className="auth-field"
-          type="password" placeholder="Senha" value={password} required minLength={6} autoComplete="current-password"
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ border: "1px solid #F3DCE6", borderRadius: 10, padding: "12px 12px", minHeight: 44, fontSize: 14, boxSizing: "border-box" }}
-        />
+        <div style={{ position: "relative" }}>
+          <input
+            id="auth-password" className="auth-field"
+            type={showPassword ? "text" : "password"} placeholder="Senha" value={password} required minLength={6} autoComplete="current-password"
+            onChange={(e) => setPassword(e.target.value)}
+            style={{ border: "1px solid #F3DCE6", borderRadius: 10, padding: "12px 40px 12px 12px", minHeight: 44, fontSize: 14, boxSizing: "border-box", width: "100%" }}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+            aria-pressed={showPassword}
+            style={{
+              position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+              background: "none", border: "none", cursor: "pointer", padding: 4, display: "flex",
+            }}
+          >
+            {showPassword ? <EyeOff size={18} color="#80646D" aria-hidden="true" /> : <Eye size={18} color="#80646D" aria-hidden="true" />}
+          </button>
+        </div>
 
         {error && <div role="alert" style={{ color: "#C1554A", fontSize: 13 }}>{error}</div>}
         {info && <div role="status" style={{ color: "#3F8F63", fontSize: 13 }}>{info}</div>}
