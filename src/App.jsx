@@ -10,6 +10,8 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from "recharts";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 /* ---------------------------------------------------------------
    TOKENS
@@ -388,6 +390,29 @@ function exportReportHTML(periodLabel, filenameBase, theme, s, categoryBudgets) 
   downloadBlob(new Blob([html], { type: "text/html;charset=utf-8;" }), `${filenameBase}.html`);
 }
 
+async function exportReportPDF(node, filename) {
+  if (!node) return;
+  const canvas = await html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new jsPDF({ unit: "pt", format: "a4" });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const margin = 24;
+  const imgWidth = pageWidth - margin * 2;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  let heightLeft = imgHeight;
+  let position = margin;
+  pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight);
+  heightLeft -= (pageHeight - margin * 2);
+  while (heightLeft > 0) {
+    position = margin - (imgHeight - heightLeft);
+    pdf.addPage();
+    pdf.addImage(imgData, "PNG", margin, position, imgWidth, imgHeight);
+    heightLeft -= (pageHeight - margin * 2);
+  }
+  pdf.save(filename);
+}
+
 function computeAnnualMatrix(yearData, categories) {
   const perMonth = MONTHS.map((_, i) => computeSummary(yearData[i] || emptyMonth()));
   const matrix = categories.map((cat) => {
@@ -731,9 +756,23 @@ function ReportView({ periodLabel, monthName, year, month, theme, onClose, categ
   const payEntries = Object.entries(s.byPayment).sort((a, b) => b[1] - a[1]);
   const maxCat = Math.max(1, ...catEntries.map((e) => e[1]));
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const printRef = useRef(null);
   useEscapeToClose(showExportMenu, () => setShowExportMenu(false));
 
   const exportOptions = [
+    {
+      key: "pdf", label: pdfLoading ? "Gerando PDF..." : "Baixar em PDF", icon: FileDown,
+      action: async () => {
+        setPdfLoading(true);
+        try {
+          await exportReportPDF(printRef.current, `relatorio-${monthName.toLowerCase()}-${year}.pdf`);
+        } finally {
+          setPdfLoading(false);
+        }
+      },
+      errorMsg: "Não foi possível gerar o PDF agora.",
+    },
     {
       key: "html", label: "Relatório mensal", icon: FileDown,
       action: () => exportReportHTML(periodLabel, `relatorio-${monthName.toLowerCase()}-${year}`, theme, s, categoryBudgets),
@@ -753,8 +792,8 @@ function ReportView({ periodLabel, monthName, year, month, theme, onClose, categ
 
   const runExport = (opt) => {
     setShowExportMenu(false);
-    try { opt.action(); }
-    catch (e) { console.error(e); alert(opt.errorMsg); }
+    Promise.resolve().then(() => opt.action())
+      .catch((e) => { console.error(e); alert(opt.errorMsg); });
   };
 
   return (
@@ -763,7 +802,7 @@ function ReportView({ periodLabel, monthName, year, month, theme, onClose, categ
         <div style={{ fontFamily: "'Manrope',sans-serif", fontWeight: 700, fontSize: 20, color: theme.text }}>Relatório · {periodLabel}</div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <div style={{ position: "relative" }}>
-            <button onClick={() => setShowExportMenu((v) => !v)} aria-haspopup="true" aria-expanded={showExportMenu} style={{ display: "flex", alignItems: "center", gap: 6, minHeight: 44, background: theme.accent2, color: "#fff", border: "none", borderRadius: 999, padding: "8px 14px", fontFamily: "'Inter',sans-serif", fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
+            <button onClick={() => setShowExportMenu((v) => !v)} disabled={pdfLoading} aria-haspopup="true" aria-expanded={showExportMenu} style={{ display: "flex", alignItems: "center", gap: 6, minHeight: 44, background: theme.accent2, color: "#fff", border: "none", borderRadius: 999, padding: "8px 14px", fontFamily: "'Inter',sans-serif", fontWeight: 600, fontSize: 13, cursor: pdfLoading ? "default" : "pointer", opacity: pdfLoading ? 0.7 : 1 }}>
               <FileDown size={14} aria-hidden="true" /> Relatório {showExportMenu ? <ChevronUp size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
             </button>
             {showExportMenu && (
@@ -788,7 +827,7 @@ function ReportView({ periodLabel, monthName, year, month, theme, onClose, categ
         </div>
       </div>
 
-      <div style={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 18, padding: 24, boxShadow: `0 4px 14px ${theme.shadow}` }}>
+      <div ref={printRef} style={{ background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 18, padding: 24, boxShadow: `0 4px 14px ${theme.shadow}` }}>
         <Eyebrow theme={theme}>Relatório financeiro mensal</Eyebrow>
         <div style={{ fontFamily: "'Manrope',sans-serif", fontWeight: 800, fontSize: 28, color: theme.text, marginBottom: 2 }}>{periodLabel}</div>
         <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 13, color: theme.muted, marginBottom: 18 }}>
