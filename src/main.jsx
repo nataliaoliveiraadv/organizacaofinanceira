@@ -30,18 +30,22 @@ function Root() {
 
   return (
     <div>
-      <button
-        onClick={() => supabase.auth.signOut()}
-        aria-label="Sair da conta"
-        style={{
-          position: "fixed", top: 12, right: 12, zIndex: 999, background: "#fff", minHeight: 44,
-          border: "1px solid #F3DCE6", borderRadius: 999, padding: "6px 14px",
-          fontSize: 12, fontFamily: "sans-serif", cursor: "pointer", color: "#4A3841",
-        }}
-      >
-        Sair
-      </button>
       <App />
+      <div style={{
+        display: "flex", justifyContent: "center", padding: "24px 18px 40px",
+      }}>
+        <button
+          onClick={() => supabase.auth.signOut()}
+          aria-label="Sair da conta"
+          style={{
+            background: "#fff", border: "1px solid #F3DCE6", borderRadius: 999,
+            padding: "10px 24px", minHeight: 44, fontSize: 13, fontFamily: "sans-serif",
+            cursor: "pointer", color: "#4A3841", fontWeight: 600,
+          }}
+        >
+          Sair da conta
+        </button>
+      </div>
     </div>
   );
 }
