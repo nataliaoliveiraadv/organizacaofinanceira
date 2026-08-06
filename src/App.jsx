@@ -1234,7 +1234,7 @@ function CardsView({
 
                     <div style={{ borderTop: `1px dashed ${theme.border}`, paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
                       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                        <input value={card.name} onChange={(e) => onRenameCard(card.index, e.target.value)} aria-label={`Nome da forma de pagamento ${card.name}`} style={{ ...inputStyle, flex: 1, minHeight: 44, boxSizing: "border-box" }} />
+                        <input value={card.name} onChange={(e) => onRenameCard(card.index, e.target.value)} aria-label={`Nome da forma de pagamento ${card.name}`} style={{ ...inputStyle, flex: 1, minWidth: 0, minHeight: 44, boxSizing: "border-box" }} />
                         <button onClick={() => onToggleIsCard(card.index)} aria-pressed={card.isCard} style={{
                           border: `1px solid ${theme.border}`, borderRadius: 8, padding: "6px 10px", minHeight: 44, fontSize: 11, fontWeight: 700, cursor: "pointer",
                           background: card.isCard ? theme.accentSoft : "transparent", color: card.isCard ? theme.accent2 : theme.muted,
@@ -1851,14 +1851,14 @@ export default function App() {
                 <Tag size={18} color={theme.accent2} aria-hidden="true" />
               </button>
               {showCategoryManager && (
-                <div role="dialog" aria-label="Gerenciar categorias" style={{ position: "absolute", right: 0, top: 46, background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 14, boxShadow: `0 8px 24px ${theme.shadow}`, zIndex: 10, width: 240, maxWidth: "calc(100vw - 36px)" }}>
+                <div role="dialog" aria-label="Gerenciar categorias" style={{ position: "absolute", right: 0, top: 46, background: theme.card, border: `1px solid ${theme.border}`, borderRadius: 14, padding: 14, boxShadow: `0 8px 24px ${theme.shadow}`, zIndex: 10, minWidth: 260, maxWidth: "min(300px, calc(100vw - 36px))" }}>
                   <div style={{ fontFamily: "'Manrope',sans-serif", fontWeight: 700, fontSize: 13, color: theme.text, marginBottom: 8 }}>Categorias</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 300, overflowY: "auto" }}>
                     {categories.map((c, i) => (
                       <div key={i} style={{ display: "flex", flexDirection: "column", gap: 3, paddingBottom: 6, borderBottom: `1px dashed ${theme.border}` }}>
                         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                           <input value={c} onChange={(e) => renameCategory(i, e.target.value)} aria-label={`Nome da categoria ${c}`} style={{
-                            flex: 1, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "6px 8px",
+                            flex: 1, minWidth: 0, border: `1px solid ${theme.border}`, borderRadius: 8, padding: "6px 8px",
                             fontSize: 12, fontFamily: "'Inter',sans-serif", background: theme.bgAlt, color: theme.text,
                           }} />
                           <button onClick={() => requestRemoveCategory(i)} aria-label={`Remover categoria ${c}`} style={{ minWidth: 44, minHeight: 44, background: "none", border: "none", cursor: "pointer", color: theme.negative, display: "flex", alignItems: "center", justifyContent: "center" }}>
